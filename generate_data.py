@@ -1,83 +1,74 @@
 import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
-from sklearn import ensemble
+from sklearn import linear_model
 
 
-def data_accuracy(predictions, real):
-    """
-    Check the accuracy of the estimated prices
-    """
-    # This will be a list, the ith element of this list will be abs(prediction[i] - real[i])/real[i]
-    differences = list(map(lambda x: abs(x[0] - x[1]) / x[1], zip(predictions, real)))
+def test_data(real, pre):    
+    total = 0
 
-    # Find the value for the bottom t percentile and the top t percentile
-    f = 0
-    t = 90
-    percentiles = np.percentile(differences, [f, t])
-    differences_filter = []
-    for diff in differences:
-        # Keep only values in between f and t percentile
-        if percentiles[0] < diff < percentiles[1]:
-            differences_filter.append(diff)
+    for i in range(0, len(pre)):
+        d = abs(pre[i] - real[i])
+        # print(f"{pre[i]} - {real[i]} = {d}")
 
-    print(f"Differences excluding outliers: {np.average(differences_filter)}")
+        total += d
+    
+    print(total/len(pre))
 
 
-clf = ensemble.GradientBoostingRegressor(n_estimators = 600, max_depth = 7, min_samples_split = 5, learning_rate = 0.7, loss = 'squared_error')
-# clf = ensemble.GradientBoostingRegressor(n_estimators = 400, max_depth = 2, min_samples_split = 3,learning_rate = 0.07, loss = 'squared_error')
-# clf = ensemble.GradientBoostingRegressor(n_estimators = 1000, max_depth = 15, min_samples_split = 9, learning_rate = 0.2, loss = 'squared_error')
+# reg = ensemble.GradientBoostingRegressor(n_estimators = 600, max_depth = 7, min_samples_split = 5, learning_rate = 0.7, loss = 'squared_error')
+# reg = ensemble.GradientBoostingRegressor(n_estimators = 400, max_depth = 2, min_samples_split = 3,learning_rate = 0.07, loss = 'squared_error')
+# reg = ensemble.GradientBoostingRegressor(n_estimators = 1000, max_depth = 15, min_samples_split = 9, learning_rate = 0.2, loss = 'squared_error')
 
+reg = linear_model.LinearRegression()
 
-data = pd.read_csv("PROJECTS/house-prices/HousePriceDataTRAINING.csv")
-data.columns = ["long", "lat", "date", "price", "bed"]
 
 
 # conv_dates = [0 if ("2011" in values or "2012" in values or "2013" in values or "2014" in values or "2015" in values or "2016" in values) else 1 for values in data.date ]
 
-conv_dates = []
+# print(data.head())
+# data = data.drop(["Ask1#", "Ask2#", "Ask3#", "Ask4#", "Ask5#", "Ask6#", "Ask7#", "Ask8#", "Ask9#", "Ask10#", "Bid1#", "Bid2#", "Bid3#", "Bid4#", "Bid5#", "Bid6#", "Bid7#", "Bid8#", "Bid9#", "Bid10#"], axis=1)
 
-for i in range(data.date.size):
-    conv_dates.append(abs(int(data.at[i, "date"].split("/")[0]) + int(data.at[i, "date"].split("/")[1])*31 + int(data.at[i, "date"].split("/")[2])*366 - 737691))
 
-data['date'] = conv_dates
+# conv_dates = [0 if ("2011" in values or "2012" in values or "2013" in values or "2014" in values or "2015" in values or "2016" in values) else 1 for values in data.date ]
 
-train1 = data.drop('price', axis=1)
-train2 = data['price']
+datatest = pd.read_excel("TrainingSetBTCChallenge.xlsx")
+
+train2 = datatest['TARGET']
+train1 = datatest.drop('TARGET', axis=1)
 
 # train1 = data.drop('lat', axis=1)
 # train1 = data.drop('long', axis=1)
 
-train2 = list(map(lambda p: np.log2(p), train2))
+# train2 = list(map(lambda p: np.log2(p), train2))
 
 # print(train1, len(train2), train2[0])
 
-clf.fit(train1, train2)
+reg.fit(train1, train2)
 
-datatest = pd.read_csv("PROJECTS/house-prices/HousePriceDataTEST.csv", header=None)
-datatest.columns = ["long", "lat", "date", "bed"]
+x_train, x_test, y_train, y_test = train_test_split(
+    train1, train2, test_size=0.10)
 
-conv_dates = []
+# y_train = list(map(lambda p: np.log2(p), y_train))
 
-for i in range(datatest.date.size):
-    conv_dates.append(abs(int(datatest.at[i, "date"].split("/")[0]) + int(datatest.at[i, "date"].split("/")[1])*31 + int(datatest.at[i, "date"].split("/")[2])*366 - 737691))
+# x_pred = list(map(lambda p: 2**p, clf.predict(x_test)))
 
-datatest['date'] = conv_dates
+# print(type(predlist))
+# print(y_test, x_pred)
 
-results = list(map(lambda p: 2**p, clf.predict(datatest)))
-
-
-for i in range(5):
-    print(results[i])
-
-first = results.pop(0)
-
-datatest = pd.read_csv("PROJECTS/house-prices/HousePriceDataTEST.csv")
-datatest[first] = results
-datatest.to_csv('PROJECTS/house-prices/result.csv', index=False)
-
-print(datatest.head())
 # print(clf.get_params())
-# print(clf.score())
+print(reg.score(x_test,y_test))
+
+
+datatest = pd.read_excel("TestSetBTCChallenge.xlsx")
+
+results = reg.predict(datatest)
+
+datatest["TARGET"] = results
+datatest.to_excel('result.xlsx')
+
+# print(datatest.head())
+# print(reg.get_params())
+# print(reg.score())
 # print(data_accuracy(y_test, x_pred))
 
