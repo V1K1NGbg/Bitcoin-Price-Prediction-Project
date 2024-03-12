@@ -1,2 +1,2 @@
 # Bitcoin-Price-Prediction-Project
-University project to calculate the actual price of Bitcoin
+School project using mathematical model to calculate the actual price of Bitcoin
